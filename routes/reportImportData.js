@@ -1,6 +1,6 @@
 const express = require("express");
-const student = require("../data/studentdata");
-const Report = require("../Models/reprtSchema");
+// const student = require("../data/studentdata");
+const Report = require("../Models/reportSchema");
 const Student = require("../Models/studentSchema");
 
 const router = express.Router();
@@ -12,7 +12,7 @@ router.route("/:rollNumber")
             const rollNumber = req.params.rollNumber;
             
             let student=await Student.findOne({ rollNumber: rollNumber });
-            
+                console.log(student);
                 
                 if (!student) {
                     return res.status(404).json({ message: "Student not found" });
@@ -27,11 +27,12 @@ router.route("/:rollNumber")
                 rollNumber:student.rollNumber,
                 name:student.name,
                 branch:student.branch,
-                section:student.section,
+                timeLate: new Date().toLocaleTimeString(),
                 mail:student.mail,
             })
 
             await newReport.save();
+            res.status(200).json({message:"insert the data in to report"})
         
         }
         catch(err)

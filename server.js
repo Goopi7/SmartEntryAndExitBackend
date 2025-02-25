@@ -2,9 +2,9 @@ const express =require("express");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const connectDB = require("./configs/dbConfigs")
-const studentDataAddedToDB = require("./routes/studentData")
+const studentDataAddedToDB = require("./routes/reportImportData")
 const studentData = require("./routes/studentData");
-const ReportDataAddedToDB = require("./routes/reportInportData");
+const ReportDataAddedToDB = require("./routes/reportImportData");
 
 const app=express();
 const PORT = 3005;
@@ -18,7 +18,7 @@ app.get("/",(req,res)=>{
 
 app.use("/api/student",studentData);
 app.use("/api/studentdata",studentDataAddedToDB);
-app.use("/api",ReportDataAddedToDB);
+app.use("/api/report",ReportDataAddedToDB);
 
 
 mongoose.connection.once("open" , ()=>{
