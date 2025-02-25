@@ -2,9 +2,9 @@ const express =require("express");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const connectDB = require("./configs/dbConfigs")
-const studentDataAddedToDB = require("../mini/routes/studentImportData")
-const studentData = require("../mini/routes/studentData");
-const ReportDataAddedToDB = require("../mini/routes/reportInportData");
+const studentDataAddedToDB = require("./routes/studentData")
+const studentData = require("./routes/studentData");
+const ReportDataAddedToDB = require("./routes/reportInportData");
 
 const app=express();
 const PORT = 3005;

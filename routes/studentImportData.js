@@ -1,6 +1,6 @@
 const express = require("express");
-const students = require("../../mini_backend/data/studentdata");
-const Student = require("../../mini_backend/Models/studentSchema");
+const students = require("../data/studentdata");
+const Student = require("../Models/studentSchema");
 const router =express.Router();
 // console.log(students.data);
 
