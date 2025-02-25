@@ -19,10 +19,10 @@ router.post("/:rollNumber", async (req, res) => {
         const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format for comparison
 
         const OFFICIAL_CHECKIN = new Date(today);
-        OFFICIAL_CHECKIN.setHours(9, 0, 0, 0); // 9:00 AM today
+        OFFICIAL_CHECKIN.setHours(9, 10); 
 
         const OFFICIAL_CHECKOUT = new Date(today);
-        OFFICIAL_CHECKOUT.setHours(16, 30, 0, 0); // 4:30 PM today
+        OFFICIAL_CHECKOUT.setHours(16, 20); 
 
         let report = await Report.findOne({ rollNumber, date: todayStr });
 
