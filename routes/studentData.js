@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Student = require("../../mini_backend/Models/studentSchema")
+const Student = require("../Models/studentSchema")
 
 router.route("/:rollnumber")
     .get(async(req , res) =>{

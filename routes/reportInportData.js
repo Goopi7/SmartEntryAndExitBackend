@@ -1,7 +1,7 @@
 const express = require("express");
-const student = require("../../mini_backend/data/studentdata");
-const Report = require("../../mini_backend/Models/reprtSchema");
-const Student = require("../../mini_backend/Models/studentSchema");
+const student = require("../data/studentdata");
+const Report = require("../Models/reprtSchema");
+const Student = require("../Models/studentSchema");
 
 const router = express.Router();
 
