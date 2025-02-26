@@ -96,3 +96,5 @@ router.post("/:rollNumber", async (req, res) => {
         res.status(500).json({ message: "Failed to update report" });
     }
 });
+
+module.exports = router;
