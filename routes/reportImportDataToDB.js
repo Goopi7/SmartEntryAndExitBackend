@@ -18,15 +18,17 @@ router.post("/:rollNumber", async (req, res) => {
         const today = new Date();
         const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format for comparison
 
-        const OFFICIAL_CHECKIN = new Date(today);
-        OFFICIAL_CHECKIN.setHours(9.10, 0,0,0); 
+        const OFFICIAL_CHECKIN = new Date(`${todayStr}T09:10:00`).getTime();
 
-        const OFFICIAL_CHECKOUT = new Date(today);
-        OFFICIAL_CHECKOUT.setHours(16.20,0,0,0); 
+        
+
+        const OFFICIAL_CHECKOUT = new Date(`${todayStr}T16:20:00`).getTime();
+
+        
 
         let report = await Report.findOne({ rollNumber, date: todayStr });
-
-        const currentTime = new Date();
+        const currentTime = new Date().getTime();
+        
         let lateEntry = 0, earlyExit = 0;
 
         if (action === "IN") {
