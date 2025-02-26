@@ -6,35 +6,34 @@ const router = express.Router();
 
 router.post("/:rollNumber", async (req, res) => {
     try {
-        const { action } = req.body; // Expect action as "IN" or "OUT"
-        const rollNumber = req.params.rollNumber; // Get roll number from params
+        const { action } = req.body; // "IN" or "OUT"
+        const rollNumber = req.params.rollNumber;
 
-        let student = await Student.findOne({ rollNumber });
+        // Find student
+        const student = await Student.findOne({ rollNumber });
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        // Ensure OFFICIAL_CHECKIN and CHECKOUT are for today
+        // Get today's date in YYYY-MM-DD format
         const today = new Date();
-        const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format for comparison
+        const todayStr = today.toISOString().split("T")[0];
 
-        const OFFICIAL_CHECKIN = new Date(`${todayStr}T09:10:00`).getTime();
+        const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM in minutes
+        const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM in minutes
 
-        
-
-        const OFFICIAL_CHECKOUT = new Date(`${todayStr}T16:20:00`).getTime();
-
-        
-
+        // Find existing report for today
         let report = await Report.findOne({ rollNumber, date: todayStr });
-        const currentTime = new Date().getTime();
-        
+
+        const now = new Date();
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes(); // Convert current time to minutes
+
         let lateEntry = 0, earlyExit = 0;
 
         if (action === "IN") {
             if (!report) {
-                
-                lateEntry = Math.max(0, (currentTime - OFFICIAL_CHECKIN) / (1000 * 60));
+                // If first check-in, calculate late entry
+                lateEntry = Math.max(0, currentTimeInMinutes - OFFICIAL_CHECKIN);
 
                 report = new Report({
                     student: student._id,
@@ -42,31 +41,46 @@ router.post("/:rollNumber", async (req, res) => {
                     name: student.name,
                     branch: student.branch,
                     mail: student.mail,
-                    checkInTime: currentTime,
+                    checkInTime: currentTimeInMinutes,
                     checkOutTime: null,
                     lateEntryDuration: lateEntry,
                     earlyExitDuration: 0,
-                    date: todayStr, // Ensure the date format matches MongoDB
+                    date: todayStr,
                 });
-
             } else {
                 return res.status(400).json({ message: "Already checked in today." });
             }
         } 
         else if (action === "OUT") {
-            if (report && !report.checkOutTime) {
-                // Calculate early exit (only if before 4:30 PM)
-                earlyExit = Math.max(0, (OFFICIAL_CHECKOUT - currentTime) / (1000 * 60));
+            if (!report) {
+                // If no check-in, create a new report and calculate early exit
+                earlyExit = Math.max(0, OFFICIAL_CHECKOUT - currentTimeInMinutes);
 
-                report.checkOutTime = currentTime;
+                report = new Report({
+                    student: student._id,
+                    rollNumber: student.rollNumber,
+                    name: student.name,
+                    branch: student.branch,
+                    mail: student.mail,
+                    checkInTime: null,
+                    checkOutTime: currentTimeInMinutes,
+                    lateEntryDuration: 0,
+                    earlyExitDuration: earlyExit,
+                    date: todayStr,
+                });
+            } else if (!report.checkOutTime) {
+                // If student had checked in, calculate early exit
+                earlyExit = Math.max(0, OFFICIAL_CHECKOUT - currentTimeInMinutes);
+
+                report.checkOutTime = currentTimeInMinutes;
                 report.earlyExitDuration = earlyExit;
             } else {
-                return res.status(400).json({ message: "Check-in required before checkout." });
+                return res.status(400).json({ message: "Already checked out today." });
             }
         }
 
         await report.save();
-        return res.json({ message: `Successfully marked ${action}`, lateEntry, earlyExit });
+        return res.json({ message: `Successfully marked ${action}`, lateEntry: report.lateEntryDuration, earlyExit: report.earlyExitDuration });
 
     } catch (err) {
         console.error(err);
