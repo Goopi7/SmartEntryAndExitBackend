@@ -3,37 +3,33 @@ const Report = require("../Models/reportSchema");
 const Student = require("../Models/studentSchema");
 
 const router = express.Router();
-
 router.post("/:rollNumber", async (req, res) => {
     try {
         const { action } = req.body; // "IN" or "OUT"
         const rollNumber = req.params.rollNumber;
 
-        // Find student
         const student = await Student.findOne({ rollNumber });
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        // Get today's date in YYYY-MM-DD format
         const today = new Date();
         const todayStr = today.toISOString().split("T")[0];
 
         const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM in minutes
         const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM in minutes
 
-        // Find existing report for today
         let report = await Report.findOne({ rollNumber, date: todayStr });
 
         const now = new Date();
-        const currentTimestamp = now.getTime();  // ✅ Correct timestamp in milliseconds
-        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes(); // Minutes since midnight
+        const IST_OFFSET = 5.5 * 60 * 60 * 1000; // Convert UTC to IST
+        const localTime = new Date(now.getTime() + IST_OFFSET); 
 
+        const currentTimeInMinutes = localTime.getHours() * 60 + localTime.getMinutes();
         let lateEntry = 0, earlyExit = 0;
 
         if (action === "IN") {
             if (!report) {
-                // Calculate late entry only if check-in is after 9:10 AM
                 if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
                     lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
                 }
@@ -44,10 +40,10 @@ router.post("/:rollNumber", async (req, res) => {
                     name: student.name,
                     branch: student.branch,
                     mail: student.mail,
-                    checkInTime: currentTimestamp, // ✅ Store correct timestamp
+                    checkInTime: localTime,  // ✅ Store correct local time
                     checkOutTime: null,
                     lateEntryDuration: lateEntry,
-                    earlyExitDuration: 0, // Will be updated at checkout
+                    earlyExitDuration: 0,
                     date: todayStr,
                 });
 
@@ -57,9 +53,7 @@ router.post("/:rollNumber", async (req, res) => {
             }
         } 
         else if (action === "OUT") {
-            // Allow check-out without prior check-in
             if (!report) {
-                // Calculate early exit if before 4:20 PM
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                     earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
                 }
@@ -70,8 +64,8 @@ router.post("/:rollNumber", async (req, res) => {
                     name: student.name,
                     branch: student.branch,
                     mail: student.mail,
-                    checkInTime: null, // No check-in
-                    checkOutTime: currentTimestamp, // ✅ Store correct timestamp
+                    checkInTime: null,
+                    checkOutTime: localTime,  // ✅ Store correct local time
                     lateEntryDuration: 0,
                     earlyExitDuration: earlyExit,
                     date: todayStr,
@@ -79,7 +73,6 @@ router.post("/:rollNumber", async (req, res) => {
 
                 await report.save();
             } else if (!report.checkOutTime) {
-                // If already checked in, update check-out time and early exit
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                     earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
                 }
@@ -87,7 +80,7 @@ router.post("/:rollNumber", async (req, res) => {
                 await Report.findOneAndUpdate(
                     { rollNumber, date: todayStr },
                     {
-                        checkOutTime: currentTimestamp, // ✅ Store correct timestamp
+                        checkOutTime: localTime,  // ✅ Store correct local time
                         earlyExitDuration: earlyExit,
                     }
                 );
@@ -103,5 +96,3 @@ router.post("/:rollNumber", async (req, res) => {
         res.status(500).json({ message: "Failed to update report" });
     }
 });
-
-module.exports = router;
