@@ -32,8 +32,10 @@ router.post("/:rollNumber", async (req, res) => {
 
         if (action === "IN") {
             if (!report) {
-                // If first check-in, calculate late entry
-                lateEntry = Math.max(0, currentTimeInMinutes - OFFICIAL_CHECKIN);
+                // Calculate late entry only if check-in is after 9:10 AM
+                if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
+                    lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
+                }
 
                 report = new Report({
                     student: student._id,
@@ -44,17 +46,22 @@ router.post("/:rollNumber", async (req, res) => {
                     checkInTime: currentTimeInMinutes,
                     checkOutTime: null,
                     lateEntryDuration: lateEntry,
-                    earlyExitDuration: 0,
+                    earlyExitDuration: 0, // Will be updated at checkout
                     date: todayStr,
                 });
+
+                await report.save();
             } else {
                 return res.status(400).json({ message: "Already checked in today." });
             }
         } 
         else if (action === "OUT") {
+            // Allow check-out without prior check-in
             if (!report) {
-                // If no check-in, create a new report and calculate early exit
-                earlyExit = Math.max(0, OFFICIAL_CHECKOUT - currentTimeInMinutes);
+                // Calculate early exit if before 4:20 PM
+                if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
+                    earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
+                }
 
                 report = new Report({
                     student: student._id,
@@ -62,25 +69,33 @@ router.post("/:rollNumber", async (req, res) => {
                     name: student.name,
                     branch: student.branch,
                     mail: student.mail,
-                    checkInTime: null,
+                    checkInTime: null, // No check-in
                     checkOutTime: currentTimeInMinutes,
                     lateEntryDuration: 0,
                     earlyExitDuration: earlyExit,
                     date: todayStr,
                 });
-            } else if (!report.checkOutTime) {
-                // If student had checked in, calculate early exit
-                earlyExit = Math.max(0, OFFICIAL_CHECKOUT - currentTimeInMinutes);
 
-                report.checkOutTime = currentTimeInMinutes;
-                report.earlyExitDuration = earlyExit;
+                await report.save();
+            } else if (!report.checkOutTime) {
+                // If already checked in, update check-out time and early exit
+                if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
+                    earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
+                }
+
+                await Report.findOneAndUpdate(
+                    { rollNumber, date: todayStr },
+                    {
+                        checkOutTime: currentTimeInMinutes,
+                        earlyExitDuration: earlyExit,
+                    }
+                );
             } else {
                 return res.status(400).json({ message: "Already checked out today." });
             }
         }
 
-        await report.save();
-        return res.json({ message: `Successfully marked ${action}`, lateEntry: report.lateEntryDuration, earlyExit: report.earlyExitDuration });
+        return res.json({ message: `Successfully marked ${action}`, lateEntry, earlyExit });
 
     } catch (err) {
         console.error(err);
