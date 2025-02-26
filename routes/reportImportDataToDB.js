@@ -19,10 +19,10 @@ router.post("/:rollNumber", async (req, res) => {
         const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format for comparison
 
         const OFFICIAL_CHECKIN = new Date(today);
-        OFFICIAL_CHECKIN.setHours(9, 10); 
+        OFFICIAL_CHECKIN.setHours(9.10, 0,0,0); 
 
         const OFFICIAL_CHECKOUT = new Date(today);
-        OFFICIAL_CHECKOUT.setHours(16, 20); 
+        OFFICIAL_CHECKOUT.setHours(16.20,0,0,0); 
 
         let report = await Report.findOne({ rollNumber, date: todayStr });
 
@@ -31,7 +31,7 @@ router.post("/:rollNumber", async (req, res) => {
 
         if (action === "IN") {
             if (!report) {
-                // Calculate late entry (only if after 9 AM)
+                
                 lateEntry = Math.max(0, (currentTime - OFFICIAL_CHECKIN) / (1000 * 60));
 
                 report = new Report({
