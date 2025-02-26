@@ -26,7 +26,8 @@ router.post("/:rollNumber", async (req, res) => {
         let report = await Report.findOne({ rollNumber, date: todayStr });
 
         const now = new Date();
-        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes(); // Convert current time to minutes
+        const currentTimestamp = now.getTime();  // ✅ Correct timestamp in milliseconds
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes(); // Minutes since midnight
 
         let lateEntry = 0, earlyExit = 0;
 
@@ -43,7 +44,7 @@ router.post("/:rollNumber", async (req, res) => {
                     name: student.name,
                     branch: student.branch,
                     mail: student.mail,
-                    checkInTime: currentTimeInMinutes,
+                    checkInTime: currentTimestamp, // ✅ Store correct timestamp
                     checkOutTime: null,
                     lateEntryDuration: lateEntry,
                     earlyExitDuration: 0, // Will be updated at checkout
@@ -70,7 +71,7 @@ router.post("/:rollNumber", async (req, res) => {
                     branch: student.branch,
                     mail: student.mail,
                     checkInTime: null, // No check-in
-                    checkOutTime: currentTimeInMinutes,
+                    checkOutTime: currentTimestamp, // ✅ Store correct timestamp
                     lateEntryDuration: 0,
                     earlyExitDuration: earlyExit,
                     date: todayStr,
@@ -86,7 +87,7 @@ router.post("/:rollNumber", async (req, res) => {
                 await Report.findOneAndUpdate(
                     { rollNumber, date: todayStr },
                     {
-                        checkOutTime: currentTimeInMinutes,
+                        checkOutTime: currentTimestamp, // ✅ Store correct timestamp
                         earlyExitDuration: earlyExit,
                     }
                 );
