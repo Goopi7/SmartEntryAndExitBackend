@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post("/:rollNumber", async (req, res) => {
     try {
-        const { action, date } = req.body; // Accept date from request
+        const { action} = req.body; // Accept date from request
         const rollNumber = req.params.rollNumber;
 
         const student = await Student.findOne({ rollNumber });
@@ -15,7 +15,7 @@ router.post("/:rollNumber", async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        const inputDate = date || moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // If no date, use today's date
+        const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); 
         const currentTime = moment().tz("Asia/Kolkata");
 
         const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM
@@ -26,7 +26,7 @@ router.post("/:rollNumber", async (req, res) => {
         let report = await Report.findOne({ rollNumber, date: inputDate });
 
         if (action === "IN") {
-            if (!report) {
+            if (!report || report.date !== inputDate ) {
                 if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
                     lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
                 }
@@ -51,7 +51,7 @@ router.post("/:rollNumber", async (req, res) => {
             }
         }
         else if (action === "OUT") {
-            if (report && !report.checkOutTime) {
+            if (report && !report.checkOutTime && report.date === inputDate) {
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                     earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
                 }
@@ -60,7 +60,7 @@ router.post("/:rollNumber", async (req, res) => {
                 report.earlyExitDuration = earlyExit;
                 await report.save();
                 return res.json({ message: "Check-out marked successfully", earlyExit });
-            } else if (!report) {
+            } else if (!report || report.date !== inputDate) {
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                     earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
                 }
