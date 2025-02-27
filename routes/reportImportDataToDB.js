@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post("/:rollNumber", async (req, res) => {
     try {
-        const { action } = req.body; // "IN" or "OUT"
+        const { action, date } = req.body; // Accept date from request
         const rollNumber = req.params.rollNumber;
 
         const student = await Student.findOne({ rollNumber });
@@ -15,15 +15,15 @@ router.post("/:rollNumber", async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        const todayStr = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // IST Time
+        const inputDate = date || moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // If no date, use today's date
         const currentTime = moment().tz("Asia/Kolkata");
 
-        const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM in minutes
-        const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM in minutes
+        const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM
+        const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM
         const currentTimeInMinutes = currentTime.hours() * 60 + currentTime.minutes();
 
         let lateEntry = 0, earlyExit = 0;
-        let report = await Report.findOne({ rollNumber, date: todayStr });
+        let report = await Report.findOne({ rollNumber, date: inputDate });
 
         if (action === "IN") {
             if (!report) {
@@ -41,15 +41,15 @@ router.post("/:rollNumber", async (req, res) => {
                     checkOutTime: null,
                     lateEntryDuration: lateEntry,
                     earlyExitDuration: 0,
-                    date: todayStr,
+                    date: inputDate, // ✅ Assigning Date
                 });
 
                 await report.save();
                 return res.json({ message: "Check-in marked successfully", lateEntry });
             } else {
-                return res.status(400).json({ message: "Already checked in today." });
+                return res.status(400).json({ message: "Already checked in for this date." });
             }
-        } 
+        }
         else if (action === "OUT") {
             if (report && !report.checkOutTime) {
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
@@ -75,7 +75,7 @@ router.post("/:rollNumber", async (req, res) => {
                     checkOutTime: currentTime,
                     lateEntryDuration: 0,
                     earlyExitDuration: earlyExit,
-                    date: todayStr,
+                    date: inputDate, // ✅ Assigning Date
                 });
 
                 await report.save();
