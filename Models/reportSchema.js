@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema({
-    student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
+    student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", },
     rollNumber: { type: String, required: true },
     name: { type: String, required: true },
     branch: { type: String, required: true },

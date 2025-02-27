@@ -7,88 +7,107 @@ const router = express.Router();
 
 router.post("/:rollNumber", async (req, res) => {
     try {
-        const { action} = req.body; // Accept date from request
-        const rollNumber = req.params.rollNumber;
-
+        const { action } = req.body;
+        const rollNumber = req.params.rollNumber.trim();
         const student = await Student.findOne({ rollNumber });
+
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); 
-        const currentTime = moment().tz("Asia/Kolkata");
+        const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // Current Date
+        const currentTime = moment().tz("Asia/Kolkata"); // Current Time
 
         const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM
         const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM
         const currentTimeInMinutes = currentTime.hours() * 60 + currentTime.minutes();
 
         let lateEntry = 0, earlyExit = 0;
+
+        // Check if Report Exists for Current Date
         let report = await Report.findOne({ rollNumber, date: inputDate });
 
+        // ✅ Late Entry Condition
         if (action === "IN") {
-            if (!report || report.date !== inputDate ) {
-                if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
-                    lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
+            if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
+                lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
+
+                if (!report) {
+                    report = new Report({
+                        student: student._id,
+                        rollNumber: student.rollNumber,
+                        name: student.name,
+                        branch: student.branch,
+                        mail: student.mail,
+                        checkInTime: currentTime,
+                        lateEntryDuration: lateEntry,
+                        date: inputDate,
+                    });
+                    await report.save();
+                    return res.json({ message: "Late entry stored successfully", lateEntry });
+                } else {
+                    return res.status(400).json({ message: "Already checked in for today." });
                 }
-
-                report = new Report({
-                    student: student._id,
-                    rollNumber: student.rollNumber,
-                    name: student.name,
-                    branch: student.branch,
-                    mail: student.mail,
-                    checkInTime: currentTime,
-                    checkOutTime: null,
-                    lateEntryDuration: lateEntry,
-                    earlyExitDuration: 0,
-                    date: inputDate, // ✅ Assigning Date
-                });
-
-                await report.save();
-                return res.json({ message: "Check-in marked successfully", lateEntry });
             } else {
-                return res.status(400).json({ message: "Already checked in for this date." });
+                return res.status(400).json({ message: "On time entry, data not stored" });
             }
         }
+
+        // ✅ Early Exit Condition
         else if (action === "OUT") {
-            if (report && !report.checkOutTime && report.date === inputDate) {
-                if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
-                    earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
+            if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
+                earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
+
+                if (!report) {
+                    report = new Report({
+                        student: student._id,
+                        rollNumber: student.rollNumber,
+                        name: student.name,
+                        branch: student.branch,
+                        mail: student.mail,
+                        checkOutTime: currentTime,
+                        earlyExitDuration: earlyExit,
+                        date: inputDate,
+                    });
+                    await report.save();
+                    return res.json({ message: "Early exit stored successfully", earlyExit });
+                } 
+                else if (!report.checkOutTime) {
+                    report.checkOutTime = currentTime;
+                    report.earlyExitDuration = earlyExit;
+                    await report.save();
+                    return res.json({ message: "Early exit updated successfully", earlyExit });
                 }
-
-                report.checkOutTime = currentTime;
-                report.earlyExitDuration = earlyExit;
-                await report.save();
-                return res.json({ message: "Check-out marked successfully", earlyExit });
-            } else if (!report || report.date !== inputDate) {
-                if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
-                    earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
+                else {
+                    return res.status(400).json({ message: "Already checked out today." });
                 }
-
-                report = new Report({
-                    student: student._id,
-                    rollNumber: student.rollNumber,
-                    name: student.name,
-                    branch: student.branch,
-                    mail: student.mail,
-                    checkInTime: null,
-                    checkOutTime: currentTime,
-                    lateEntryDuration: 0,
-                    earlyExitDuration: earlyExit,
-                    date: inputDate, // ✅ Assigning Date
-                });
-
-                await report.save();
-                return res.json({ message: "Early exit marked successfully", earlyExit });
             } else {
-                return res.status(400).json({ message: "Already checked out today." });
+                return res.status(400).json({ message: "On time exit, data not stored" });
             }
-        } else {
+        }
+
+        else {
             return res.status(400).json({ message: "Invalid Action" });
         }
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Failed to update report" });
+    }
+});
+
+router.get("/history/:rollNumber", async (req, res) => {
+    try {
+        const rollNumber = req.params.rollNumber;
+        const reports = await Report.find({ rollNumber }).sort({ date: -1 });
+
+        if (reports.length === 0) {
+            return res.status(404).json({ message: "No reports found" });
+        }
+
+        res.json(reports);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch report history" });
     }
 });
 
