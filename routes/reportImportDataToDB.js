@@ -29,7 +29,7 @@ router.post("/:rollNumber", async (req, res) => {
         let lateEntry = 0, earlyExit = 0;
         
         if (action === "IN") {
-            if (!report || report.date !== todaystr) {
+            if ( report.date !== todaystr || !report ) {
                 if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
                     lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
                 }
@@ -53,7 +53,7 @@ router.post("/:rollNumber", async (req, res) => {
             }
         } 
         else if (action === "OUT") {
-            if (!report || report.date !== todaystr) {
+            if (report.date !== todaystr || !report ) {
                 if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                     earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
                 }
