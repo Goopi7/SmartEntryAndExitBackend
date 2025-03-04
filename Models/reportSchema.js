@@ -10,7 +10,7 @@ const reportSchema = new mongoose.Schema({
     checkOutTime: { type: Date, default: null },
     lateEntryDuration: { type: Number, default: 0 },
     earlyExitDuration: { type: Number, default: 0 },
-    date: { type: String, required: true }
+    date: { type: String, required: true },
 });
 
 // ✅ Unique Index to Prevent Duplicate Reports on the Same Day

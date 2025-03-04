@@ -44,7 +44,7 @@ router.post("/:rollNumber", async (req, res) => {
                         date: inputDate,
                     });
                     await report.save();
-                    return res.json({ message: "Late entry stored successfully", lateEntry });
+                    return res.json({ message: "Late entry stored successfully", lateEntry, name , date,rollNumber,branch });
                 } else {
                     return res.status(400).json({ message: "Already checked in for today." });
                 }
