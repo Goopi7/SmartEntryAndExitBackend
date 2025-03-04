@@ -44,7 +44,7 @@ router.post("/:rollNumber", async (req, res) => {
                         date: inputDate,
                     });
                     await report.save();
-                    return res.json({ message: "Late entry stored successfully", lateEntry, name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch });
+                    return res.json({ message: "Late entry stored successfully", lateEntry, name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch,Intime:report.checkInTime });
                 } else {
                     return res.status(400).json({ message: "Already checked in for today." });
                 }
@@ -70,13 +70,13 @@ router.post("/:rollNumber", async (req, res) => {
                         date: inputDate,
                     });
                     await report.save();
-                    return res.json({ message: "Early exit stored successfully", earlyExit  ,name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch});
+                    return res.json({ message: "Early exit stored successfully", earlyExit  ,name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch,OutTime:report.checkOutTime,});
                 } 
                 else if (!report.checkOutTime) {
                     report.checkOutTime = currentTime;
                     report.earlyExitDuration = earlyExit;
                     await report.save();
-                    return res.json({ message: "Early exit updated successfully", earlyExit, name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch });
+                    return res.json({ message: "Early exit updated successfully", earlyExit, name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch,OutTime:report.checkOutTime, });
                 }
                 else {
                     return res.status(400).json({ message: "Already checked out today." });
