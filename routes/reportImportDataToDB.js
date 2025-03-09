@@ -9,13 +9,13 @@ const transporter = nodemailer.createTransport({
     port: 465, // ✅ Use 465 for SSL, or 587 for TLS
     secure: true,
     auth: {
-      user: process.env.USERID,
-      pass: process.env.PASSWORD,
+      user: "mandhate.gopinath@gmail.com",
+      pass: "tcyy awnl pxxm trwx",
     },
 });
 async function forwardEmail(to, subject, text) {
     let info = await transporter.sendMail({
-      from: process.env.USERID,
+      from: "mandhate.gopinath@gmail.com",
       to,
       subject,
       text,
