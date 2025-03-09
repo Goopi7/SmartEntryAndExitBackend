@@ -1,9 +1,29 @@
+const nodemailer = require("nodemailer");
 const express = require("express");
 const Report = require("../Models/reportSchema");
 const Student = require("../Models/studentSchema");
 const moment = require("moment-timezone");
 
 const router = express.Router();
+
+const transporter = nodemailer.createTransport({
+    service: "outlook",
+    auth: {
+      user: process.env.USERID,
+      pass: process.env.PASSWORD,
+    },
+  });
+  
+  async function forwardEmail(to, subject, text) {
+    let info = await transporter.sendMail({
+      from: process.env.USERID,
+      to,
+      subject,
+      text,
+    });
+    console.log("Email forwarded: ", info.response);
+  }
+  
 
 router.post("/:rollNumber", async (req, res) => {
     try {
@@ -14,7 +34,7 @@ router.post("/:rollNumber", async (req, res) => {
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
-
+        const studentEmail = student.mail;
         const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // Current Date
         const currentTime = moment().tz("Asia/Kolkata"); // Current Time
 
@@ -44,6 +64,15 @@ router.post("/:rollNumber", async (req, res) => {
                         date: inputDate,
                     });
                     await report.save();
+                    const totalLateEntries = await Report.countDocuments({
+                        rollNumber: student.rollNumber,
+                        lateEntryDuration: { $gt: 0 }, // Only count late entries
+                      });
+                    await forwardEmail(studentEmail, "Late Entry Notification", `Dear ${student.name},
+
+                        You were late by ${lateEntry} minutes on ${inputDate}. Your total number of late entries has now reached ${totalLateEntries} times.
+                        `);
+                        
                     return res.json({ message: "Late entry stored successfully", lateEntry, name: report.name, date: report.date, rollNumber: report.rollNumber, branch: report.branch,Intime:report.checkInTime });
                 } else {
                     return res.status(400).json({ message: "Already checked in for today." });
