@@ -3,13 +3,11 @@ const express = require("express");
 const Report = require("../Models/reportSchema");
 const Student = require("../Models/studentSchema");
 const moment = require("moment-timezone");
-
 const router = express.Router();
-
 const transporter = nodemailer.createTransport({
     host: "smtp.office365.com",
     port: 587,
-    secure: false, // Must be false for Office365
+    secure: false,
     auth: {
       user: process.env.USERID,
       pass: process.env.PASSWORD,
@@ -18,10 +16,7 @@ const transporter = nodemailer.createTransport({
       rejectUnauthorized: false,
     },
 });
-
-
-  
-  async function forwardEmail(to, subject, text) {
+async function forwardEmail(to, subject, text) {
     let info = await transporter.sendMail({
       from: process.env.USERID,
       to,
@@ -30,35 +25,34 @@ const transporter = nodemailer.createTransport({
     });
     console.log("Email forwarded: ", info.response);
   }
-  
+
+  transporter.verify((error, success) => {
+    if (error) {
+        console.error("SMTP Connection Error: ", error);
+    } else {
+        console.log("SMTP Server is ready to send emails");
+    }
+});
 
 router.post("/:rollNumber", async (req, res) => {
     try {
         const { action } = req.body;
         const rollNumber = req.params.rollNumber.trim();
         const student = await Student.findOne({ rollNumber });
-
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
         const studentEmail = student.mail;
-        const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); // Current Date
-        const currentTime = moment().tz("Asia/Kolkata"); // Current Time
-
-        const OFFICIAL_CHECKIN = 9 * 60 + 10; // 9:10 AM
-        const OFFICIAL_CHECKOUT = 16 * 60 + 20; // 4:20 PM
+        const inputDate = moment().tz("Asia/Kolkata").format("YYYY-MM-DD"); 
+        const currentTime = moment().tz("Asia/Kolkata"); 
+        const OFFICIAL_CHECKIN = 9 * 60 + 10; 
+        const OFFICIAL_CHECKOUT = 16 * 60 + 20; 
         const currentTimeInMinutes = currentTime.hours() * 60 + currentTime.minutes();
-
         let lateEntry = 0, earlyExit = 0;
-
-        // Check if Report Exists for Current Date
         let report = await Report.findOne({ rollNumber, date: inputDate });
-
-        // ✅ Late Entry Condition
         if (action === "IN") {
             if (currentTimeInMinutes > OFFICIAL_CHECKIN) {
                 lateEntry = currentTimeInMinutes - OFFICIAL_CHECKIN;
-
                 if (!report) {
                     report = new Report({
                         student: student._id,
@@ -73,7 +67,7 @@ router.post("/:rollNumber", async (req, res) => {
                     await report.save();
                     const totalLateEntries = await Report.countDocuments({
                         rollNumber: student.rollNumber,
-                        lateEntryDuration: { $gt: 0 }, // Only count late entries
+                        lateEntryDuration: { $gt: 0 },
                       });
                     await forwardEmail(studentEmail, "Late Entry Notification", `Dear ${student.name},
 
@@ -88,12 +82,9 @@ router.post("/:rollNumber", async (req, res) => {
                 return res.status(400).json({ message: "On time entry, data not stored" });
             }
         }
-
-        // ✅ Early Exit Condition
         else if (action === "OUT") {
             if (currentTimeInMinutes < OFFICIAL_CHECKOUT) {
                 earlyExit = OFFICIAL_CHECKOUT - currentTimeInMinutes;
-
                 if (!report) {
                     report = new Report({
                         student: student._id,
@@ -121,7 +112,6 @@ router.post("/:rollNumber", async (req, res) => {
                 return res.status(400).json({ message: "On time exit, data not stored" });
             }
         }
-
         else {
             return res.status(400).json({ message: "Invalid Action" });
         }
@@ -130,7 +120,6 @@ router.post("/:rollNumber", async (req, res) => {
         res.status(500).json({ message: "Failed to update report" });
     }
 });
-
 router.get("/history/:rollNumber", async (req, res) => {
     try {
         const rollNumber = req.params.rollNumber;
@@ -146,5 +135,4 @@ router.get("/history/:rollNumber", async (req, res) => {
         res.status(500).json({ message: "Failed to fetch report history" });
     }
 });
-
 module.exports = router;
