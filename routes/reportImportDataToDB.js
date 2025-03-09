@@ -5,7 +5,9 @@ const Student = require("../Models/studentSchema");
 const moment = require("moment-timezone");
 const router = express.Router();
 const transporter = nodemailer.createTransport({
-    host: "gmail",
+    host: "smtp.gmail.com", // ✅ Correct SMTP server
+    port: 465, // ✅ Use 465 for SSL, or 587 for TLS
+    secure: true,
     auth: {
       user: process.env.USERID,
       pass: process.env.PASSWORD,
