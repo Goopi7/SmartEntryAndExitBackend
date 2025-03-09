@@ -5,15 +5,10 @@ const Student = require("../Models/studentSchema");
 const moment = require("moment-timezone");
 const router = express.Router();
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
+    host: "gmail",
     auth: {
       user: process.env.USERID,
       pass: process.env.PASSWORD,
-    },
-    tls: {
-      rejectUnauthorized: false,
     },
 });
 async function forwardEmail(to, subject, text) {
