@@ -9,17 +9,16 @@ const router = express.Router();
 const transporter = nodemailer.createTransport({
     host: "smtp.office365.com",
     port: 587,
-    secure: false,
+    secure: false, // Must be false for Office365
     auth: {
       user: process.env.USERID,
       pass: process.env.PASSWORD,
     },
     tls: {
-      ciphers: "SSLv3",
+      rejectUnauthorized: false,
     },
-    debug: true,  // Enable debugging
-    logger: true, // Enable logs
 });
+
 
   
   async function forwardEmail(to, subject, text) {
