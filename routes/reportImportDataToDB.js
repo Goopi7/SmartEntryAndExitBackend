@@ -5,7 +5,7 @@ const Student = require("../Models/studentSchema");
 const moment = require("moment-timezone");
 const router = express.Router();
 const transporter = nodemailer.createTransport({
-    host: "smtp.office365.com",
+    host: "smtp.gmail.com",
     port: 587,
     secure: false,
     auth: {
