@@ -7,12 +7,20 @@ const moment = require("moment-timezone");
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
-    service: "outlook",
+    host: "smtp.office365.com",
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.USERID,
       pass: process.env.PASSWORD,
     },
-  });
+    tls: {
+      ciphers: "SSLv3",
+    },
+    debug: true,  // Enable debugging
+    logger: true, // Enable logs
+});
+
   
   async function forwardEmail(to, subject, text) {
     let info = await transporter.sendMail({
