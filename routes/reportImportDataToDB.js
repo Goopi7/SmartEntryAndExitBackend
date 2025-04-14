@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
       user: "mandhate.gopinath@gmail.com",
-      pass: "tcyy awnl pxxm trwx",
+      pass: "cwrx mvoo otxj rlim",
     },
 });
 async function forwardEmail(to, subject, text) {
